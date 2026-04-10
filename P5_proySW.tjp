@@ -19,7 +19,7 @@ project pSix "Web Game"  2025-12-15 +5m {
   # the project reports. If not specified, the current day will be
   # used, but this will likely be outside of the project range, so it
   # can't be seen in the reports.
-  now 2026-02-25-13:00
+  now 2026-04-10-15:00
   # The currency for all money values is the US Dollar.
   currency "EUR"
 
@@ -67,6 +67,11 @@ resource dev2 "Samantha Müller" {
 }
 resource dev3 "Peter Green" {
   email "kkk@unizar.es"
+}
+
+resource yo "Eduardo Blasco" {
+  email "903723@unizar.es"
+  limits {dailymax 4h}
 }
 
 # Now we specify the work packages. The whole project is described as
@@ -147,16 +152,72 @@ task WMGame "Web & Mobile Game" {
     }    
   }
 
+  task tmovF "Movil Front End" {
+    purge chargeset
+    chargeset mFront
+    responsible dev3
+    depends WMGame.tback.tBEd
+
+    task tMGUId "Diseño GUI Movil" {
+      effort 9d
+      allocate dev3
+    }
+
+    task tMFEc "Construccion Front End Movil" {
+      effort 15d
+      allocate yo, dev3
+      depends WMGame.tmovF.tMGUId
+    }
+
+    task tMFEt "Test Front End Movil" {
+      effort 6d
+      allocate yo
+      depends WMGame.tmovF.tMFEc
+    }
+  }
+
+  task tDback "Despliegue Nube Back End" {
+    purge chargeset
+    chargeset back
+    responsible dev1
+    depends WMGame.tback
+
+    task tEV "Evaluacion Nube" {
+      effort 4d
+      allocate dev1
+    }
+
+    task tDEC "Decision Nube" {
+      effort 2d
+      allocate dev1
+      depends WMGame.tDback.tEV
+    }
+
+    task tDESP "Despliegue en Nube" {
+      effort 3d
+      allocate dev1, yo
+      depends WMGame.tDback.tDEC
+      journalentry 2026-04-10 "Problemas con el despliegue" {
+        author dev1
+        alert yellow
+        summary "La nube elegida presenta problemas de compatibilidad con nuestro proyecto por lo que se procede a evaluar y decidir distintas 
+                 nubes alternativas."
+      }
+    }
+  }
+
   task ttest "Acceptance tests" {
       effort 10d
       allocate boss
       allocate dev2
       actual:effort 20d
+      actual:start 2026-05-15
       depends WMGame.twebF
+      depends WMGame.tmovF
       depends WMGame.tback
-      }
+      depends WMGame.tDback
+  }
 
-    
   task deliveries "Milestones" {
 
     # Some milestones have customer payments associated with them. We
@@ -252,6 +313,12 @@ textreport frame "" {
     title "Resource Graph"
     center '<[report id="resourceGraph"]>'
   }
+
+  textreport "PlanInicial" {
+    formats html
+    title "Plan Inicial"
+    center '<[report id="planInicial"]>'
+  }
 }
 
 # A traditional Gantt chart with a project overview.
@@ -263,6 +330,19 @@ taskreport overview "" {
           revenue, chart { ${TaskTip} }
   # For this report we like to have the abbreviated weekday in front
   # of the date. %a is the tag for this.
+  timeformat "%a %Y-%m-%d"
+  loadunit days
+  hideresource @all
+  balance cost rev
+  caption 'All effort values are in man days.'
+}
+
+taskreport planInicial "" {
+  scenarios plan
+  headline "Plan Inicial Proyecto"
+  columns bsi { title 'WBS' },
+          name, start, end, effort, cost,
+          revenue, chart { ${TaskTip} }
   timeformat "%a %Y-%m-%d"
   loadunit days
   hideresource @all
